@@ -4,13 +4,13 @@ Small launcher for wsl. Run argv[0] in default WSL distribution.
 
 ## usage
 
-Copy or symlink to WSL command name.
+Copy or hardlink[^1] to WSL command name.
 
 ```
 // copy
 CMD> copy wslrun.exe zsh.exe
-// symlink
-CMD> mklink zsh.exe wslrun.exe
+// hardlink
+CMD> mklink /H zsh.exe wslrun.exe
 ```
 
 Run copy or symlink file.
@@ -34,3 +34,5 @@ name=Debian
 ## license
 
 MIT
+
+[^1]: Windows Explorer follows symlink and execute original executable path. It is not suitable for this program.
