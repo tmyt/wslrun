@@ -77,7 +77,7 @@ int _tmain()
 	PathRemoveExtension(command_name);
 
 	// Check default name
-	if (_tccmp(command_name, _T("wslrun")) == 0) return print_help(), -1;
+	if (_tcscmp(command_name, _T("wslrun")) == 0) return print_help(), -1;
 
 	// Build command
 	const RawString command(MAX_CMDLINE);
