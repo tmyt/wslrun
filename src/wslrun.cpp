@@ -8,6 +8,9 @@
 
 #pragma comment(lib, "shlwapi.lib")
 
+// Avoid Windows 10(20175) bug.
+// #define WORKAROUND_20175
+
 #define MAX_CMDLINE (8192)
 #define ERROR_EXIT(code, message, ...) { _tprintf(message _T("\n"), __VA_ARGS__); return code; }
 
@@ -53,6 +56,10 @@ void print_help();
 
 int _tmain()
 {
+#ifdef WORKAROUND_20175
+	SetEnvironmentVariable(L"PATH", L"");
+#endif
+
 	// Initialize WslApi
 	WslApi wslapi;
 	if (!wslapi.init()) ERROR_EXIT(-1, _T("Could not load wslapi.dll"));
