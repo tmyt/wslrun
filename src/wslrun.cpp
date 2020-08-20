@@ -4,6 +4,7 @@
 #include <Windows.h>
 #include <tchar.h>
 #include <Shlwapi.h>
+#include <shellapi.h>
 #include "../inc/loader.h"
 
 #pragma comment(lib, "shlwapi.lib")
@@ -52,6 +53,7 @@ private:
 int get_distribution_name(RawString& name);
 int get_distribution_from_config(TCHAR* config_path, RawString& name);
 int get_distribution_from_registry(RawString& name);
+int create_hardlink(TCHAR* name);
 void print_help();
 
 int _tmain()
@@ -77,7 +79,12 @@ int _tmain()
 	PathRemoveExtension(command_name);
 
 	// Check default name
-	if (_tcscmp(command_name, _T("wslrun")) == 0) return print_help(), -1;
+	if (_tcscmp(command_name, _T("wslrun")) == 0) {
+		auto numArgs = 0;
+		auto* argv = CommandLineToArgvW(GetCommandLineW(), &numArgs);
+		if(numArgs == 3 && _tcscmp(argv[1], _T("--link")) == 0) return create_hardlink(argv[2]);
+		return print_help(), -1;
+	}
 
 	// Build command
 	const RawString command(MAX_CMDLINE);
@@ -145,5 +152,37 @@ int get_distribution_from_registry(RawString& name)
 void print_help()
 {
 	_tprintf(_T("wslrun is small WSL process launcher.\n"));
-	_tprintf(_T("https://github.com/tmyt/wslrun\n"));
+	_tprintf(_T("https://github.com/tmyt/wslrun\n\n"));
+	_tprintf(_T("Options:\n"));
+	_tprintf(_T("  --link [name]\n"));
+	_tprintf(_T("    Create hardlink to [name]\n"));
+}
+
+int create_hardlink(TCHAR* arg)
+{
+	auto* name = PathFindFileName(arg);
+	if(_tcscmp(name, _T(".")) == 0 || _tcscmp(name, _T("..")) == 0)
+	{
+		_tprintf(_T("error: could not create %s\n"), name);
+		return -1;
+	}
+	TCHAR sourcePath[MAX_PATH] = { 0 };
+	TCHAR targetPath[MAX_PATH] = { 0 };
+	GetModuleFileName(nullptr, sourcePath, MAX_PATH);
+	_tcscpy_s(targetPath, sourcePath);
+	PathRemoveFileSpec(targetPath);
+	PathCombine(targetPath, targetPath, name);
+	auto* extension = PathFindExtension(targetPath);
+	if (_tcsicmp(extension, _T(".exe")) != 0)
+	{
+		PathAddExtension(targetPath, _T(".exe"));
+	}
+	if(CreateHardLink(targetPath, sourcePath, nullptr))
+	{
+		_tprintf(_T("success: link %s created\n"), name);
+	}else
+	{
+		_tprintf(_T("error: could not create %s. (%d)\n"), name, GetLastError());
+	}
+	return 0;
 }
